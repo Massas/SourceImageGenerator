@@ -1,0 +1,2 @@
+# SourceImageGenerator
+PSImageGeneratorにてSourceImageとして使用する画像を生成するプログラム
