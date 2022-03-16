@@ -1,0 +1,407 @@
+function Get-RandomPoint($maxvalue){
+#	Write-Host "[Get-RandomPoint] START"
+	$ret = Get-Random -Maximum $maxvalue -Minimum 0
+	Write-Host "ret: $ret"
+#	Write-Host "[Get-RandomPoint] END"
+	return $ret
+}
+
+# Return one color of system.drawing.color at random
+function Get-RandomColor{
+#	Write-Host "[Get-RandomColor] START"
+	$arr_color = @()
+
+	# Obtain color name information and put it into an array.
+	$arr_all = [system.drawing.color]|get-member -static -MemberType Property | Select-Object Name
+
+	foreach($color in $arr_all){
+		if($color.Name -eq "Empty"){
+				continue
+		}
+#		Write-Host $font.Name
+		$arr_color += $color
+	}
+	$count = $arr_color.Count
+	$select = Get-Random -Maximum ($count - 1)
+	$retcolor = $arr_color[$select]
+
+#	Write-Host "color: " $retcolor.Name
+#	Write-Host "[Get-RandomColor] END"
+	return $retcolor.Name
+}
+
+function Get-RandomAngle{
+#	Write-Host "[Get-RandomAngle] START"
+	$select = Get-Random -Maximum 359 -Minimum 0
+	Write-Host "select: $select"
+#	Write-Host "[Get-RandomAngle] END"
+	return $select
+}
+
+function Get-RandomBrushes{
+#	Write-Host "[Get-RandomBrushes] START"
+	$arr_brush = [System.Drawing.Brushes]|get-member -static -MemberType Property | Select-Object Name
+	$count = $arr_brush.Count
+	$num_select = Get-Random -Maximum ($count - 1)
+
+	$ret_brush = $arr_brush[$num_select]
+	$ret_str = $ret_brush.Name
+#	Write-Host "brush_color: $ret_str"
+
+#	Write-Host "[Get-RandomBrushes] END"
+	return [System.Drawing.Brushes]::$ret_str
+}
+
+function Get-RandomDrawingPattern($loopcount){
+#	Write-Host "[Get-RandomDrawingPattern] START"
+	$arr_mode = @("c", "a", "w", "f", "r", "o", "l", "k", "j")
+	$arr_ret = @()
+
+	for ($i = 0; $i -lt $loopcount; $i++) {
+		$select = Get-Random -Maximum ($arr_mode.Count - 1) -Minimum 0
+		$ret = $arr_mode[$select]
+#		Write-Host $i : $ret
+		$arr_ret += $ret
+	}
+#	Write-Host "[Get-RandomDrawingPattern] END"
+	return $arr_ret
+}
+
+# Create a graphic main routine
+function Get-Graphics{
+	Write-Host "[Get-Graphics] START"
+
+	$canvas = New-Object System.Drawing.Bitmap(500, 500)
+
+	$mode_pattern = Read-Host "please enter random: r or select: s"
+	$loopcount = Read-Host "please enter drawing process level 5 to 100"
+
+	if (($mode_pattern -eq 'r') -or ($mode_pattern -eq 'R')) {
+		$arr_random = @()
+		# Get drawing pattern array
+		$arr_random = Get-RandomDrawingPattern($loopcount)
+	}
+
+	for($l_count = 0; $l_count -lt $loopcount; $l_count++){
+
+		$graphic = [System.Drawing.Graphics]::FromImage($canvas)
+		# Create Pen object
+		$pen_color = Get-RandomColor
+		Write-Host "[[pen_color]]: $pen_color"
+		$pen = New-Object System.Drawing.Pen($pen_color)
+
+		# Image object's width
+		$img_width = $canvas.Width
+		# Image object's width
+		$img_height = $canvas.Height
+
+		if (($mode_pattern -eq 'r') -or ($mode_pattern -eq 'R')) {
+			# setting mode to variable
+			$mode = $arr_random[$l_count]
+		}else{
+			# select mode(s/S) is default
+			Write-Host "[filling]circle mode: p, arc mode: o, pie: l, polygon: k, rectangle: j."
+			$mode = Read-Host "[drawing]circle mode: c, arc mode: a, pie: w, polygon: f, rectangle: r."	
+		}
+
+		if(($mode -eq 'c') -or ($mode -eq 'C')){
+			Write-Host "Circle mode"
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+
+			$available_width = $img_width - $x_position
+			$rect_width = Get-RandomPoint($available_width)
+
+			$available_height = $img_height - $y_position
+			$rect_height = Get-RandomPoint($available_height)
+
+			$graphic.DrawRectangle($pen, $x_position, $y_position, $rect_width, $rect_height)
+			$graphic.DrawEllipse($pen, $x_position, $y_position, $rect_width, $rect_height)
+
+		}elseif(($mode -eq 'a') -or ($mode -eq 'A')) {
+			Write-Host "Arc mode"
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+
+			$available_width = $img_width - $x_position
+			$arc_width = Get-RandomPoint($available_width)
+
+			$available_height = $img_height - $y_position
+			$arc_height = Get-RandomPoint($available_height)
+
+			$start_angle = Get-RandomAngle
+			$sweep_angle = Get-RandomAngle
+
+			$graphic.DrawRectangle($pen, $x_position, $y_position, $arc_width, $arc_height)
+			$graphic.DrawArc($pen, $x_position, $y_position, $arc_width, $arc_height, $start_angle, $sweep_angle)
+
+		}elseif(($mode -eq 'w') -or ($mode -eq 'W')) {
+			Write-Host "Pie mode"
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+
+			$available_width = $img_width - $x_position
+			$pie_width = Get-RandomPoint($available_width)
+
+			$available_height = $img_height - $y_position
+			$pie_height = Get-RandomPoint($available_height)
+
+			$start_angle = Get-RandomAngle
+			$sweep_angle = Get-RandomAngle
+
+			$graphic.DrawRectangle($pen, $x_position, $y_position, $pie_width, $pie_height)
+			$graphic.DrawPie($pen, $x_position, $y_position, $pie_width, $pie_height, $start_angle, $sweep_angle)
+
+		}elseif(($mode -eq 'f') -or ($mode -eq 'F')) {
+			Write-Host "Polygon mode"
+			$ps = @()
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+			$p1 = New-Object System.Drawing.Point($x_position, $y_position)
+			$ps += $p1
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+			$p2 = New-Object System.Drawing.Point($x_position, $y_position)
+			$ps += $p2
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+			$p3 = New-Object System.Drawing.Point($x_position, $y_position)
+			$ps += $p3
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+			$p4 = New-Object System.Drawing.Point($x_position, $y_position)
+			$ps += $p4
+
+			$graphic.DrawPolygon($pen, $ps);
+
+		}elseif(($mode -eq 'r') -or ($mode -eq 'R')) {
+			Write-Host "Rectangle mode"
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+
+			$available_width = $img_width - $x_position
+			$rect_width = Get-RandomPoint($available_width)
+
+			$available_height = $img_height - $y_position
+			$rect_height = Get-RandomPoint($available_height)
+
+			$graphic.DrawRectangle($pen, $x_position, $y_position, $rect_width, $rect_height);
+
+		}elseif(($mode -eq 'o') -or ($mode -eq 'O')) {
+			Write-Host "filling Arc mode"
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+
+			$available_width = $img_width - $x_position
+			$arc_width = Get-RandomPoint($available_width)
+
+			$available_height = $img_height - $y_position
+			$arc_height = Get-RandomPoint($available_height)
+
+			$start_angle = Get-RandomAngle
+			$sweep_angle = Get-RandomAngle
+
+			$graphic.DrawRectangle($pen, $x_position, $y_position, $arc_width, $arc_height)
+			$graphic.DrawArc($pen, $x_position, $y_position, $arc_width, $arc_height, $start_angle, $sweep_angle)
+
+		}elseif(($mode -eq 'l') -or ($mode -eq 'L')) {
+			Write-Host "filling Pie mode"
+
+			$brush = Get-RandomBrushes
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+
+			$available_width = $img_width - $x_position
+			$pie_width = Get-RandomPoint($available_width)
+
+			$available_height = $img_height - $y_position
+			$pie_height = Get-RandomPoint($available_height)
+
+			$start_angle = Get-RandomAngle
+			$sweep_angle = Get-RandomAngle
+
+			$graphic.FillEllipse($brush, $x_position, $y_position, $pie_width, $pie_height)
+
+		}elseif(($mode -eq 'k') -or ($mode -eq 'K')) {
+			Write-Host "filling Polygon mode"
+			
+			$brush = Get-RandomBrushes
+			
+			$ps = @()
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+			$p1 = New-Object System.Drawing.Point($x_position, $y_position)
+			$ps += $p1
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+			$p2 = New-Object System.Drawing.Point($x_position, $y_position)
+			$ps += $p2
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+			$p3 = New-Object System.Drawing.Point($x_position, $y_position)
+			$ps += $p3
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+			$p4 = New-Object System.Drawing.Point($x_position, $y_position)
+			$ps += $p4
+
+			# Fill Mode
+			$fillrandom = Get-Random -Maximum 10 -Minimum 1
+			if(($fillrandom % 2) -eq 0){
+				$fillmode = 0
+			}else {
+				$fillmode = 1
+			}
+
+			$graphic.FillPolygon($brush, $ps, $fillmode);
+
+		}elseif(($mode -eq 'j') -or ($mode -eq 'J')) {
+			Write-Host "filling rectangle mode"
+
+			$brush = Get-RandomBrushes
+
+			$x_position = Get-RandomPoint($img_width)
+			$y_position = Get-RandomPoint($img_height)
+
+			$available_width = $img_width - $x_position
+			$rect_width = Get-RandomPoint($available_width)
+
+			$available_height = $img_height - $y_position
+			$rect_height = Get-RandomPoint($available_height)
+
+			$graphic.FillRectangle($brush, $x_position, $y_position, $rect_width, $rect_height)
+
+		}else {
+			Write-Host "None"
+		}
+		
+		$graphic.Dispose()
+	}
+
+	Write-Host "[Get-Graphics] END"
+	
+	return $canvas
+}
+
+function Convert-LabelToImage($label){
+	Write-Host "[Convert-LabelToImage] START"
+
+	$size = $label.Size
+	$height = $size.Height
+	$width = $size.Width
+
+	$DstBmp = New-Object System.Drawing.Bitmap($width, $height)
+	$Rect = New-Object System.Drawing.Rectangle(0, 0, $width, $height)
+	# Convert a label to a Bitmap
+	$label.DrawToBitmap($DstBmp, $Rect)
+
+	$savename = Read-Host "please enter filename to save as PNG" 	
+	try{
+		# Save the file
+		$DstBmp.Save($sourceImgDir + "$savename", [System.Drawing.Imaging.ImageFormat]::Png)	
+	}catch{
+		Write-Host "Save failed."
+		throw ArgumentNullException
+	}
+#	"savename: $savename" | Add-Content $logfilename -Encoding UTF8
+
+	Write-Host "[Convert-LabelToImage] END"
+	return
+}
+
+function Show_Message($text){
+	Write-Host "Show_Message: start"
+
+	$form = New-Object System.Windows.Forms.Form
+	$form.Text = "���͓��e�̕\��"
+	$form.Size = New-Object System.Drawing.Size(500,500)
+	$form.StartPosition = "CenterScreen"
+
+	$form.MaximizeBox = $false
+	$form.MinimizeBox = $false
+	$form.FormBorderStyle = "FixedSingle"
+	$form.Opacity = 1
+
+	$OKButton = New-Object System.Windows.Forms.Button
+	$OKButton.Location = New-Object System.Drawing.Point(40,100)
+	$OKButton.Size = New-Object System.Drawing.Size(75,30)
+	$OKButton.Text = "OK"
+	$OKButton.DialogResult = "OK"
+	$OKButton.Flatstyle = "Popup"
+
+	$str_OKBackColor = Get-RandomColor
+#	Write-Host "str_OKBackColor: $str_OKBackColor"
+	$OKButton.Backcolor = $str_OKBackColor
+
+	$str_OKForeColor = Get-RandomColor
+#	Write-Host "str_OKForeColor: $str_OKForeColor"
+	$OKButton.forecolor = $str_OKForeColor
+
+	$label = New-Object System.Windows.Forms.Label
+	$label.Location = New-Object System.Drawing.Point(10,30)
+	$label.Size = New-Object System.Drawing.Size(500,500)
+	$label.Text = $text
+
+	$str_labelforeColor = Get-RandomColor
+#	Write-Host "[Show_Message]str_labelForeColor: $str_labelforeColor"
+	$label.forecolor = $str_labelforeColor
+
+	$label.font = $Font
+
+	# Create a graphic and put it on the label.
+	$label.image = Get-Graphics
+
+	$form.Topmost = $True
+
+	$form.AcceptButton = $OKButton
+
+	$form.Controls.Add($OKButton)
+	$form.Controls.Add($label)
+
+	$result = $form.ShowDialog()
+
+	if ($result -eq "OK")
+	{
+		$x = $label.Text
+		Write-Host "$x"
+		Write-Host "Show_Message: end"
+
+		$wanttosave = Read-Host "Do you want to save? If yes, enter y."
+		if(($wanttosave -eq 'y') -or ($wanttosave -eq 'Y')){
+			# convert and save
+			Convert-LabelToImage($label)
+		}
+		return 0
+	}
+}
+
+# main
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+$sourceImgDir = '.\source_img\'
+
+while ($true) {
+    $select = Read-Host "please enter and start. if you want to quit, please 'q' and enter"
+    if(($select -ne 'q') -or ($select -ne 'Q')){
+        # Windows Form shows
+        Show_Message
+    }else {
+        $date = Get-Date
+        Write-Host "terminate this program ($date)"
+        Start-Sleep 1
+        return
+    }   
+}
